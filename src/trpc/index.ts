@@ -155,6 +155,7 @@ export const appRouter = router({
       });
       return { url: stripeSession.url };
     }
+
     // if not subscribed
     const stripeSession = await stripe.checkout.sessions.create({
       success_url: billingUrl,
