@@ -1,30 +1,14 @@
 import { db } from "@/db";
 import { stripe } from "@/lib/stripe";
-import { NextApiRequest } from "next";
 import { headers } from "next/headers";
+import { NextRequest } from "next/server";
 import type Stripe from "stripe";
 
-const buffer = (req: NextApiRequest) => {
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-
-    req.on("data", (chunk: Buffer) => {
-      chunks.push(chunk);
-    });
-
-    req.on("end", () => {
-      resolve(Buffer.concat(chunks));
-    });
-
-    req.on("error", reject);
-  });
-};
-
-export const POST = async (request: NextApiRequest) => {
+export const POST = async (request: NextRequest) => {
   let event: Stripe.Event;
 
   try {
-    const body = await buffer(request);
+    const body = await request.text();
     const signature = headers().get("stripe-signature") ?? "";
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || "");
   } catch (err) {
