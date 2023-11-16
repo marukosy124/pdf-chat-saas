@@ -1,15 +1,31 @@
 import { db } from "@/db";
 import { stripe } from "@/lib/stripe";
+import { NextApiRequest } from "next";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
 
-export const POST = async (request: Request) => {
-  const body = await request.text();
-  const signature = headers().get("Stripe-Signature") ?? "";
+const buffer = (req: NextApiRequest) => {
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
 
+    req.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    req.on("end", () => {
+      resolve(Buffer.concat(chunks));
+    });
+
+    req.on("error", reject);
+  });
+};
+
+export const POST = async (request: NextApiRequest) => {
   let event: Stripe.Event;
 
   try {
+    const body = await buffer(request);
+    const signature = headers().get("stripe-signature") ?? "";
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || "");
   } catch (err) {
     return new Response(`Webhook Error: ${err instanceof Error ? err.message : "Unknown Error"}`, { status: 400 });
